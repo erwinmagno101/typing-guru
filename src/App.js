@@ -56,7 +56,7 @@ const MainApp = () => {
   const [wpm, setWpm] = useState(0)
   const intervalRef = useRef(null);
 
-  
+  //This is it
 
   useEffect(() => {
     let wpmCounter = (60 * correct.length) / timeLapsed;
