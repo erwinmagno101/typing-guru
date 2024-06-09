@@ -3,6 +3,8 @@ import './App.css';
 import { ReactComponent as ProfileIcon } from './icons/profile_logo.svg';
 import  axios  from 'axios';
 
+//test push
+
 function App() {
   return (
     <div className='main-container'>
@@ -62,7 +64,6 @@ const MainApp = () => {
     if(remainingTime !== 0){
       setWpm(wpmCounter);
     }
-
   }, [remainingTime, timeLapsed])
 
   useEffect(() => {
