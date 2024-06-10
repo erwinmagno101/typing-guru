@@ -127,6 +127,7 @@ const MainApp = () => {
     setMoveTriggerTarget(0)
     setMoveTriggerRow(2)
     setDistanceToMove(0)
+    setDisplayWords([])
     if(timeIsRunning){
       clearInterval(intervalRef.current);
       clearTimeout(timer)
@@ -159,7 +160,7 @@ const MainApp = () => {
       const key = e.key;
       const targetWord = fetchedWords[target];
 
-      if (key === ' ' || key === 'Space') {
+      if ((key === ' ' || key === 'Space') && timeIsRunning) {
         e.preventDefault();
         if (targetWord === input) {
           setCorrect((correct) => [...correct, target]);
@@ -327,62 +328,90 @@ const MainApp = () => {
 
   return (
     <div className='home-body'>
-      <div className='panel-container'>
-        <ul className='mode-panel'>
-          <li className='mode-select mode-li mode-active' onClick={(e) => handleModeSelectType(e.target, 'Timed')}>Timed</li>
-          <li className='mode-select mode-li' onClick={(e) => handleModeSelectType(e.target, 'Words')}>Words</li>
-
-        </ul>
-        <ul className='mode-panel'>
-          {
-            activeMode === 'Timed' ? 
-                levelsTimed.map((level, index) => {
-                  return(
-                    <li className='level-select mode-li' key={index} onClick={(e) => handleLevelSelect(e.target, level)}>{level}</li>
-                  )
-                })
-            : ''
-          }
-          {
-            activeMode === 'Words' ? 
-              levelsWords.map((level, index) => {
-                return(
-                  <li className='level-select mode-li' key={index} onClick={(e) => handleLevelSelect(e.target, level)}>{level}</li>
-                )
-              })
-            : ''
-          }
-        </ul>
-      </div>
-      <div className='parent-container'>
-        <div className='words-container' style={{ maxWidth: containerMaxWidth, transform: `translateY(-${distanceToMove}%)`}}>
-          {
-            displayWords.map((item, index) => {
-              if(activeMode === 'Words' && index <= Number(activeLevel)-1){
-                return item
+        <div className='first-section'>
+        {
+          !timeIsRunning ? 
+            <div className='panel-container'>
+            <ul className='mode-panel block-style'>
+              <li className='mode-select mode-li mode-active' onClick={(e) => handleModeSelectType(e.target, 'Timed')}>Timed</li>
+              <li className='mode-select mode-li' onClick={(e) => handleModeSelectType(e.target, 'Words')}>Words</li>
+            </ul>
+            <ul className='mode-panel'>
+              {
+                activeMode === 'Timed' ? 
+                    levelsTimed.map((level, index) => {
+                      return(
+                        <li className='level-select mode-li' key={index} onClick={(e) => handleLevelSelect(e.target, level)}>{level}</li>
+                      )
+                    })
+                : ''
               }
-
-              if(activeMode === 'Timed'){
-                return item
+              {
+                activeMode === 'Words' ? 
+                  levelsWords.map((level, index) => {
+                    return(
+                      <li className='level-select mode-li' key={index} onClick={(e) => handleLevelSelect(e.target, level)}>{level}</li>
+                    )
+                  })
+                : ''
               }
-            })
-          }
+            </ul>
+          </div>
+        : ''
+        }
         </div>
-      </div>
-      <input
-        type='textbox'
-        className='text-input'
-        value={input}
-        autoFocus={true}
-        onChange={(e) => {
-          setInput(e.target.value)
-          setTimeIsRunning(true)
-        }}
-      />
-      <h1 className='timer-bar'>Time Remaining: {remainingTime +' '+ timeLapsed} seconds</h1>
-      <h1 className='timer-bar'>WPM: {wpm}</h1>
+        <div className='second-section'>
+          <div className='progress-container'>
+            {
+              timeIsRunning ?
+              <>
+                <div className='progress-word'>
+                  <p>{remainingTime}</p>
+                </div>
+                <div className='progress-bar'></div>
+              </>
+              : ''
+            }
+          </div>
+            <div className='parent-container'>
+            {
+              displayWords.length != 0 ? 
+              <>
+                            <div className='words-container' style={{ maxWidth: containerMaxWidth, transform: `translateY(-${distanceToMove}%)`}}>
+              {
+                displayWords.map((item, index) => {
+                  if(activeMode === 'Words' && index <= Number(activeLevel)-1){
+                    return item
+                  }
+
+                  if(activeMode === 'Timed'){
+                    return item
+                  }
+                })
+              }
+            </div>
+              </> : ''
+            }
+          </div>
+        </div>
+        <div className='third-section'>
+        <input
+          type='textbox'
+          className='text-input'
+          value={input}
+          autoFocus={true}
+          onChange={(e) => {
+            setInput(e.target.value)
+            setTimeIsRunning(true)
+          }}
+        />
+        </div>
     </div>
   );
 };
 
 export default App;
+
+
+
+
