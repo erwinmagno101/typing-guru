@@ -153,13 +153,7 @@ const MainScreen = () => {
       
             };
             intervalRef.current = setInterval(updateRemainingTime, 1000);
-        
-            if(activeMode === 'Timed'){
-              handleTimedLogic()
-            }
-            if(activeMode === 'Words'){
-            }
-      
+            handleTimedModeLogic()
             return () => {
               clearInterval(intervalRef.current);
             };
@@ -171,22 +165,39 @@ const MainScreen = () => {
           setWpmCounter(wpmCounter);
         }
     }
+
+
+    useEffect(() => {
+      handleWordsModeLogic()
+    }, [targetCounter])
+
+    const handleWordsModeLogic = () => {
+      if(activeMode === 'Words'&& correct.length + wrong.length === Number(activeLevel)){
+        dispatch(wpmResult(wpmCounter))
+        dispatch(changeScreen('ResultScreen'))
+        console.log('yes')
+      }
+
+    }
   
-    const handleTimedLogic = () => {
-      let timeLimit = Number(activeLevel.replace('s',''))
-      console.log('time is running')
-  
-        setRemainingTime(timeLimit)
-        let timer =  setTimeout(() => {
-            clearInterval(intervalRef.current);
-            dispatch(wpmResult(wpmCounterRef.current))
-            dispatch(changeScreen('ResultScreen'))
-            setRemainingTime(0);
-            setTimeLapsed(0)
-            setTimeIsRunning(false);
-            console.log('time has finished')
-        }, Number(timeLimit * 1000));
-        setTimer(timer)
+    const handleTimedModeLogic = () => {
+      if(activeMode === 'Timed'){
+        let timeLimit = Number(activeLevel.replace('s',''))
+        console.log('time is running')
+    
+          setRemainingTime(timeLimit)
+          let timer =  setTimeout(() => {
+              clearInterval(intervalRef.current);
+              dispatch(wpmResult(wpmCounterRef.current))
+              dispatch(changeScreen('ResultScreen'))
+              setRemainingTime(0);
+              setTimeLapsed(0)
+              setTimeIsRunning(false);
+              console.log('time has finished')
+          }, Number(timeLimit * 1000));
+          setTimer(timer)
+      }
+
     }
   
     const resetStates = () => {
@@ -225,6 +236,8 @@ const MainScreen = () => {
         }finally {
           setLoadingWords(false);
         }     
+      }else{
+        console.log('Fetching words')
       }
     } 
   
@@ -312,7 +325,7 @@ const MainScreen = () => {
           <div className='first-section'>
           {
             !timeIsRunning ? 
-              <div className='panel-container'>
+            <div className='panel-container'>
               <ul className='mode-panel block-style'>
                 <li className='mode-select mode-li mode-active' onClick={(e) => handleModeSelectType(e.target, 'Timed')}>Timed</li>
                 <li className='mode-select mode-li' onClick={(e) => handleModeSelectType(e.target, 'Words')}>Words</li>
@@ -338,7 +351,12 @@ const MainScreen = () => {
                 }
               </ul>
             </div>
-          : ''
+            : 
+            <div className='stats-container'>
+              <div className='stats-item block-style'>100</div>
+              <div className='stats-item block-style'>50</div>
+              <div className='stats-item block-style'>10</div>
+            </div>
           }
           </div>
           <div className='second-section'>
@@ -346,10 +364,7 @@ const MainScreen = () => {
               {
                 timeIsRunning ?
                 <>
-                  <div className='progress-word'>
-                    <p>{remainingTime}</p>
-                  </div>
-                  <div className='progress-bar'></div>
+                  <ProgressBar activeMode= {activeMode} activeLevel={activeLevel} wordsTyped={correct.length + wrong.length}/>
                 </>
                 : ''
               }
@@ -358,7 +373,10 @@ const MainScreen = () => {
               {
                 displayWords.length !== 0 ? 
                 <>
-                              <div className='words-container' style={{ maxWidth: containerMaxWidth, transform: `translateY(-${distanceToMove}%)`}}>
+                              <div 
+                                className='words-container' 
+                                style={{ maxWidth: containerMaxWidth, transform: `translateY(-${distanceToMove}%)`}
+                              }>
                 {
                   displayWords.map((item, index) => {
                     if(activeMode === 'Words' && index <= Number(activeLevel)-1){
@@ -388,11 +406,29 @@ const MainScreen = () => {
           />
   
             <p>{wpmRes}</p>
+            <button onClick = {() => {resetStates()}}>res</button>
             {/* <p>{console.log(wpmCounter)}</p> */}
           </div>
       </div>
     );
   };
+
+
+  const ProgressBar = ({activeMode, activeLevel, wordsTyped}) => {
+    if(activeMode === 'Timed'){
+      return (
+        <div className='progress-bar timed-bar' style={{animationDuration: `${activeLevel}, .5s`}}></div>
+      )
+    }
+
+    if(activeMode === 'Words'){
+      let width = (wordsTyped / Number(activeLevel)) * 100
+
+      return(
+        <div className='progress-bar words-bar' style={{animationDuration: '.5s', width: `${width}%`}}></div>
+      )
+    }
+  }
   
 
   export default MainScreen;
