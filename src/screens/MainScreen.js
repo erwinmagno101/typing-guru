@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import {wpmResult} from '../slices/typeStatsSlice'
 import { changeScreen } from '../slices/screenSlice';
 import { useEffect, useState, useRef, useCallback } from 'react';
+import { upperCase } from 'lodash';
 
 const MainScreen = () => {
     const [targetIndex, setTargetIndex] = useState(0);
@@ -21,11 +22,11 @@ const MainScreen = () => {
     const [distanceToMove, setDistanceToMove] = useState(0);
     const [activeMode, setActiveMode] = useState('Timed')
     const [activeLevel, setActiveLevel] = useState('15s')
-  
     const [fetchedWords, setFetchedWords] = useState([]);
     const [loadingWords, setLoadingWords] = useState(false);
     const [errorFetchingWords, setErrorFetchingWords] = useState(null);
-  
+    const [wordsToUse, setWordsToUse] = useState([]);
+
     const [timeIsRunning, setTimeIsRunning] = useState(false)
     const [timer, setTimer] = useState();
     const [remainingTime, setRemainingTime] = useState();
@@ -36,6 +37,7 @@ const MainScreen = () => {
   
     const wpmRes= useSelector((state) => state.wpm.value)
     const dispatch = useDispatch();
+
     
     useEffect(() => {
         document.addEventListener('keydown', handleInputLogic, true);
@@ -43,12 +45,16 @@ const MainScreen = () => {
             document.removeEventListener('keydown', handleInputLogic, true);
         };
 
-    }, [inputWord, targetIndex, fetchedWords, targetCounter]);
+    }, [inputWord, targetIndex, wordsToUse, targetCounter]);
 
 
     useEffect(() => {
         handleWordsDisplayed()
-    }, [fetchedWords, targetIndex]);
+    }, [wordsToUse, targetIndex]);
+
+    useEffect(() => {
+      setWordsToUse(fetchedWords.sort(() => Math.random() - 0.5))
+    }, [fetchedWords, activeMode, activeLevel])
 
 
     useEffect(() => {
@@ -65,8 +71,8 @@ const MainScreen = () => {
 
     useEffect(() => {
         setDisplayWords([])
-        fetchWordsFromApi()
         resetStates()
+        setDisplay()
       },[activeMode, activeLevel])
   
     useEffect(() => {
@@ -113,7 +119,19 @@ const MainScreen = () => {
 
     const handleInputLogic = (e) => {
         const key = e.key;
-        const targetWord = fetchedWords[targetIndex];
+        const targetWord = wordsToUse[targetIndex];
+        if(key.length === 1){
+          setInputWord((inputWord + key))
+          setTimeIsRunning(true)
+        }
+
+        if(key === 'Backspace'){
+          setInputWord(inputWord.slice(0, -1))
+        }
+        if(e.altKey === true && e.key === 'Enter'){
+          console.log('execute')
+          restart();
+        }
 
         if ((key === ' ' || key === 'Space') && timeIsRunning) {
         e.preventDefault();
@@ -162,7 +180,7 @@ const MainScreen = () => {
     const wpmCalculation = () => {
         let wpmCounter = (60 * correct.length) / timeLapsed;
         if(remainingTime !== 0){
-          setWpmCounter(wpmCounter);
+          setWpmCounter(Math.round(wpmCounter));
         }
     }
 
@@ -223,6 +241,10 @@ const MainScreen = () => {
         console.log('timer has stoped')
       }
     }
+
+    useEffect(() => {
+      fetchWordsFromApi()
+    }, [])
   
     const fetchWordsFromApi = async () => {
       setLoadingWords(true);
@@ -257,13 +279,9 @@ const MainScreen = () => {
       return 'inactive-word';
     };
   
-  
-  
-  
     const setDisplay = async () => {
-      let wordsToDisplay = []
-  
-      fetchedWords.map((word, index) => {
+      let wordsToDisplay = []      
+      wordsToUse.map((word, index) => {
         wordsToDisplay.push(
           <li
             ref={(el) => (itemRefs.current[index] = el)}
@@ -319,6 +337,14 @@ const MainScreen = () => {
       '50',
       '100',
     ]
+
+
+    const restart = () => {
+      console.log('restarted')
+      resetStates()
+      setWordsToUse(fetchedWords.sort(() => Math.random() - 0.5))
+      handleWordsDisplayed()
+    }
   
     return (
       <div className='home-body screen-height'>
@@ -353,9 +379,31 @@ const MainScreen = () => {
             </div>
             : 
             <div className='stats-container'>
-              <div className='stats-item block-style'>100</div>
-              <div className='stats-item block-style'>50</div>
-              <div className='stats-item block-style'>10</div>
+              <div className='stats-item block-style'>
+                <div>{wpmCounter? wpmCounter : 0}</div>
+                <div>WPM</div>
+              </div>
+              <div className='stats-item block-style'>
+                {wrong.length !== 0 || correct.length !== 0 ? 
+                <div>{Math.round((((wrong.length + correct.length) - wrong.length) / (wrong.length + correct.length) * 100))}%</div>
+                :
+                <div>0%</div>
+                }
+                <div>ACCURACY</div>
+              </div>
+              <div className='stats-item block-style'>
+                {
+                activeMode === 'Timed' ?
+                <div>{remainingTime}s</div>
+                :''  
+                }
+                {
+                activeMode === 'Words' ?
+                <div>{Number(activeLevel) - (correct.length + wrong.length)}</div>
+                :''  
+                }
+                <div>{upperCase(activeMode)}</div>
+              </div>
             </div>
           }
           </div>
@@ -394,20 +442,10 @@ const MainScreen = () => {
             </div>
           </div>
           <div className='third-section'>
-          <input
-            type='textbox'
-            className='text-input'
-            value={inputWord}
-            autoFocus={true}
-            onChange={(e) => {
-              setInputWord(e.target.value)
-              setTimeIsRunning(true)
-            }}
-          />
-  
-            <p>{wpmRes}</p>
-            <button onClick = {() => {resetStates()}}>res</button>
-            {/* <p>{console.log(wpmCounter)}</p> */}
+            <p>{inputWord}</p>
+            <button onClick = {() => {
+              restart()
+            }}>res</button>
           </div>
       </div>
     );
