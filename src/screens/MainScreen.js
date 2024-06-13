@@ -11,8 +11,8 @@ const MainScreen = () => {
     const [targetRow, setTargetRow] = useState(1)
     const [targetCounter, setTargetCounter] = useState(0)
     const [inputWord, setInputWord] = useState('');
-    const [correct, setCorrect] = useState([]);
-    const [wrong, setWrong] = useState([]);
+    const [wordCorrect, setWordCorrect] = useState([]);
+    const [wordWrong, setWordWrong] = useState([]);
     const [containerMaxWidth, setContainerMaxWidth] = useState('1500px');
     const itemRefs = useRef([]);
     const [rows, setRows] = useState([]);
@@ -27,11 +27,18 @@ const MainScreen = () => {
     const [errorFetchingWords, setErrorFetchingWords] = useState(null);
     const [wordsToUse, setWordsToUse] = useState([]);
 
+    const [targetLetterIndex, setTargetLetterIndex] = useState(0)
+    const [letterCorrect, setLetterCorrect] = useState([])
+    const [letterWrong, setLetterWrong] = useState([])
+    const [correctLetterContainer, setCorrectLetterContainer] = useState([])
+    const [wrongLetterContainer, setWrongLetterContainer] = useState([])
+
     const [timeIsRunning, setTimeIsRunning] = useState(false)
     const [timer, setTimer] = useState();
     const [remainingTime, setRemainingTime] = useState();
     const [timeLapsed, setTimeLapsed] = useState(0);
     const [wpmCounter, setWpmCounter] = useState(0)
+    const [accuracyCounter, setAccuracyCounter] = useState(0)
     const intervalRef = useRef(null);
     const wpmCounterRef = useRef(wpmCounter);
   
@@ -44,13 +51,11 @@ const MainScreen = () => {
         return () => {
             document.removeEventListener('keydown', handleInputLogic, true);
         };
-
     }, [inputWord, targetIndex, wordsToUse, targetCounter]);
-
 
     useEffect(() => {
         handleWordsDisplayed()
-    }, [wordsToUse, targetIndex]);
+    }, [wordsToUse, targetIndex, targetLetterIndex]);
 
     useEffect(() => {
       setWordsToUse(fetchedWords.sort(() => Math.random() - 0.5))
@@ -77,6 +82,7 @@ const MainScreen = () => {
   
     useEffect(() => {
         wpmCalculation()
+        setDisplay()
     }, [remainingTime, timeLapsed])
 
     useEffect(() => {
@@ -125,36 +131,65 @@ const MainScreen = () => {
           setTimeIsRunning(true)
         }
 
+        if(targetWord){
+          if(key === targetWord[targetLetterIndex]){
+            setCorrectLetterContainer((correctLetterContainer) => [...correctLetterContainer, targetLetterIndex])
+            setTargetLetterIndex(targetLetterIndex+1)
+          }else if(key !== 'Backspace'){
+            setWrongLetterContainer((wrongLetterContainer) => [...wrongLetterContainer, targetLetterIndex])
+            setTargetLetterIndex(targetLetterIndex+1)
+          }
+        }
+
         if(key === 'Backspace'){
           setInputWord(inputWord.slice(0, -1))
+          if(correctLetterContainer.includes(targetLetterIndex-1)){
+            setCorrectLetterContainer((correctLetterContainer) => {
+              const newArray = correctLetterContainer.slice();
+              newArray.splice(newArray.indexOf(targetLetterIndex-1), 1);
+              return newArray;
+            });
+          }
+          if(wrongLetterContainer.includes(targetLetterIndex-1)){
+            setWrongLetterContainer((wrongLetterContainer) => {
+              const newArray = wrongLetterContainer.slice();
+              newArray.splice(newArray.indexOf(targetLetterIndex-1), 1);
+              return newArray;
+            });
+            console.log('wrong contains')
+          }
+          setTargetLetterIndex(targetLetterIndex-1)
         }
         if(e.altKey === true && e.key === 'Enter'){
-          console.log('execute')
           restart();
         }
 
         if ((key === ' ' || key === 'Space') && timeIsRunning) {
-        e.preventDefault();
-        if (targetWord === inputWord) {
-            setCorrect((correct) => [...correct, targetIndex]);
-        } else {
-            setWrong((wrong) => [...wrong, targetIndex]);
-        }
-        setInputWord('');
-        setTargetIndex(targetIndex + 1);
-        setTargetCounter(targetCounter + 1);
-        setMoveTriggerTarget(rows[moveTriggerRow-1]);
+          if (targetWord === inputWord) {
+              setWordCorrect((correct) => [...correct, targetIndex]);
+          } else {
+              setWordWrong((wrong) => [...wrong, targetIndex]);
+          }
+          setInputWord('');
+          setTargetIndex(targetIndex + 1);
+          setTargetCounter(targetCounter + 1);
+          setMoveTriggerTarget(rows[moveTriggerRow-1]);
+          setTargetLetterIndex(0)
+          setLetterCorrect((letterCorrect) => [...letterCorrect, correctLetterContainer])
+          setLetterWrong((letterWrong) => [...letterWrong, wrongLetterContainer])
+          setCorrectLetterContainer([]);
+          setWrongLetterContainer([]);
 
 
-        if(targetCounter === rows[targetRow-1]){
-            setTargetRow(targetRow+1);
-            setTargetCounter(1);
-    
-        }
-        if(targetCounter === moveTriggerTarget-1 && targetRow === moveTriggerRow && rows.length - targetRow !== 1){
-            setMoveTriggerRow(moveTriggerRow+1) 
-            setDistanceToMove(distanceToMove+33.5);
-        }
+          if(targetCounter === rows[targetRow-1]){
+              setTargetRow(targetRow+1);
+              setTargetCounter(1);
+      
+          }
+          if(targetCounter === moveTriggerTarget-1 && targetRow === moveTriggerRow && rows.length - targetRow !== 1){
+              setMoveTriggerRow(moveTriggerRow+1) 
+              setDistanceToMove(distanceToMove+33.5);
+          }
 
         }
         
@@ -178,9 +213,33 @@ const MainScreen = () => {
           }
     }
     const wpmCalculation = () => {
-        let wpmCounter = (60 * correct.length) / timeLapsed;
+
+
+        let totalCorrectLetters = 0;
+
+        for(let row = 0 ; row < letterCorrect.length; row++){
+          totalCorrectLetters += letterCorrect[row].length
+        }
+
+        let totalWrongLetters = 0;
+
+        for(let row = 0 ; row < letterWrong.length; row++){
+          totalWrongLetters += letterWrong[row].length
+        }
+
+        
+        let totalCharactersType = totalCorrectLetters + totalWrongLetters;
+        let grossCPM = (totalCharactersType * 60) / timeLapsed;
+
+
+        let accuracy = totalCorrectLetters / totalCharactersType
+
+        let adjustedCPM = grossCPM * accuracy;
+        let averageWPM = adjustedCPM / 5
+
         if(remainingTime !== 0){
-          setWpmCounter(Math.round(wpmCounter));
+          setAccuracyCounter(Math.round(accuracy * 100))
+          setWpmCounter(Math.round(averageWPM));
         }
     }
 
@@ -190,10 +249,9 @@ const MainScreen = () => {
     }, [targetCounter])
 
     const handleWordsModeLogic = () => {
-      if(activeMode === 'Words'&& correct.length + wrong.length === Number(activeLevel)){
+      if(activeMode === 'Words'&& wordCorrect.length + wordWrong.length === Number(activeLevel)){
         dispatch(wpmResult(wpmCounter))
         dispatch(changeScreen('ResultScreen'))
-        console.log('yes')
       }
 
     }
@@ -201,7 +259,6 @@ const MainScreen = () => {
     const handleTimedModeLogic = () => {
       if(activeMode === 'Timed'){
         let timeLimit = Number(activeLevel.replace('s',''))
-        console.log('time is running')
     
           setRemainingTime(timeLimit)
           let timer =  setTimeout(() => {
@@ -211,7 +268,6 @@ const MainScreen = () => {
               setRemainingTime(0);
               setTimeLapsed(0)
               setTimeIsRunning(false);
-              console.log('time has finished')
           }, Number(timeLimit * 1000));
           setTimer(timer)
       }
@@ -219,12 +275,17 @@ const MainScreen = () => {
     }
   
     const resetStates = () => {
+      setTargetLetterIndex(0)
+      setLetterCorrect([])
+      setLetterWrong([])
+      setCorrectLetterContainer([])
+      setWrongLetterContainer([])
       setTargetIndex(0)
       setTargetRow(1)
       setTargetIndex(0)
       setInputWord('')
-      setCorrect([])
-      setWrong([])
+      setWordCorrect([])
+      setWordWrong([])
       setTargetCounter(0)
       setRows([])
       setMoveTriggerTarget(0)
@@ -238,7 +299,7 @@ const MainScreen = () => {
         setRemainingTime(0)
         setTimeLapsed(0);
         setWpmCounter(0)
-        console.log('timer has stoped')
+        setAccuracyCounter(0)
       }
     }
 
@@ -264,20 +325,35 @@ const MainScreen = () => {
     } 
   
   
-    const handleWordStyle = (index) => {
-      if (correct.includes(index)) {
-        return 'word-correct';
+
+    const handleLetterStyle = (targetWordIndex, letterIndex) => {
+      if(correctLetterContainer.includes(letterIndex) && targetWordIndex === targetIndex){
+        return 'letter-correct'
       }
-      if (wrong.includes(index)) {
-        return 'word-wrong';
+
+      if(wrongLetterContainer.includes(letterIndex) && targetWordIndex === targetIndex){
+        return 'letter-wrong'
       }
-  
-      if(fetchedWords[index] === fetchedWords[targetIndex]){
-        return 'active-word';
+
+      if(targetWordIndex === targetIndex){
+        return 'active-word'
       }
-  
-      return 'inactive-word';
-    };
+
+      try{
+        if(letterCorrect[targetWordIndex].includes(letterIndex)){
+          return 'letter-correct'
+        }
+        if(letterWrong[targetWordIndex].includes(letterIndex)){
+          return 'letter-wrong'
+        }
+
+
+      }catch(err){
+
+      }
+
+      return 'inactive-word'
+    }
   
     const setDisplay = async () => {
       let wordsToDisplay = []      
@@ -286,9 +362,16 @@ const MainScreen = () => {
           <li
             ref={(el) => (itemRefs.current[index] = el)}
             key={index}
-            className={`word ${handleWordStyle(index)}`}
+            className={`word`}
             > 
-            {word}
+            {
+              word.split('').map((char, letterIndex) => {
+                return (
+                  <span className={`letter ${handleLetterStyle(index, letterIndex)}`} key={letterIndex}>{char}</span>
+                )
+              }
+              )
+            }
           </li>
         )
       })
@@ -340,7 +423,6 @@ const MainScreen = () => {
 
 
     const restart = () => {
-      console.log('restarted')
       resetStates()
       setWordsToUse(fetchedWords.sort(() => Math.random() - 0.5))
       handleWordsDisplayed()
@@ -384,8 +466,8 @@ const MainScreen = () => {
                 <div>WPM</div>
               </div>
               <div className='stats-item block-style'>
-                {wrong.length !== 0 || correct.length !== 0 ? 
-                <div>{Math.round((((wrong.length + correct.length) - wrong.length) / (wrong.length + correct.length) * 100))}%</div>
+                {wordWrong.length !== 0 || wordCorrect.length !== 0 ? 
+                <div>{accuracyCounter}%</div>
                 :
                 <div>0%</div>
                 }
@@ -399,7 +481,7 @@ const MainScreen = () => {
                 }
                 {
                 activeMode === 'Words' ?
-                <div>{Number(activeLevel) - (correct.length + wrong.length)}</div>
+                <div>{Number(activeLevel) - (wordCorrect.length + wordWrong.length)}</div>
                 :''  
                 }
                 <div>{upperCase(activeMode)}</div>
@@ -412,7 +494,7 @@ const MainScreen = () => {
               {
                 timeIsRunning ?
                 <>
-                  <ProgressBar activeMode= {activeMode} activeLevel={activeLevel} wordsTyped={correct.length + wrong.length}/>
+                  <ProgressBar activeMode= {activeMode} activeLevel={activeLevel} wordsTyped={wordCorrect.length + wordWrong.length}/>
                 </>
                 : ''
               }
@@ -467,6 +549,6 @@ const MainScreen = () => {
       )
     }
   }
-  
+
 
   export default MainScreen;

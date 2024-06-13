@@ -73,17 +73,16 @@
   transition: font-weight .3s ease, color .3s ease;
 }
 
-.word-correct {
+.letter-correct {
   color: var(---accent);
 }
 
-.word-wrong {
+.letter-wrong {
   color: red;
 }
 
 .active-word{
   color: white;
-  font-weight: bold;
 }
 
 .inactive-word{
