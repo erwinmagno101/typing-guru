@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/typing-guru/static/css/main.a67f24ff.css",
+    "main.js": "/typing-guru/static/js/main.999e2448.js",
+    "static/js/453.8dc59e98.chunk.js": "/typing-guru/static/js/453.8dc59e98.chunk.js",
+    "static/media/profile_logo.svg": "/typing-guru/static/media/profile_logo.c9d2e342849fc64d9c3f97918360220f.svg",
+    "index.html": "/typing-guru/index.html",
+    "main.a67f24ff.css.map": "/typing-guru/static/css/main.a67f24ff.css.map",
+    "main.999e2448.js.map": "/typing-guru/static/js/main.999e2448.js.map",
+    "453.8dc59e98.chunk.js.map": "/typing-guru/static/js/453.8dc59e98.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a67f24ff.css",
+    "static/js/main.999e2448.js"
+  ]
+}
